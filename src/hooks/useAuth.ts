@@ -35,7 +35,6 @@ export function useAuth() {
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
-    setLoading(false);
     navigate("/login"); // redireciona corretamente
   };
 

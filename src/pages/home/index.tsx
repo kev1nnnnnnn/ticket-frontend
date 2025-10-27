@@ -1,17 +1,18 @@
-import * as React from "react";
 import { useAuth } from "../../hooks/useAuth";
+import DrawerList from "../../components/drawer/DrawerList";
 
 export default function Home() {
   const { user, logout, loading } = useAuth();
 
   if (loading) return <p>Carregando...</p>;
-  if (!user) return null; // usuário deslogado
+  if (!user) return null;
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>🏠 Página Home</h1>
+      <h1>🏠 Ticket's</h1>
       <p>Bem-vindo, {user.fullName}!</p>
-      <button onClick={logout}>Sair</button>
+
+      <DrawerList onLogout={logout} />
     </div>
   );
 }
