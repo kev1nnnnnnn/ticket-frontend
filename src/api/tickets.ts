@@ -38,3 +38,10 @@ export const updateTicket = async (id: number, ticket: Partial<Ticket>): Promise
 export const deleteTicket = async (id: number): Promise<void> => {
   await axiosInstance.delete(`/chamados/${id}`);
 };
+
+// 🔹 Marcar chamado como resolvido
+export const resolveTicket = async (id: number): Promise<Ticket> => {
+  const { data } = await axiosInstance.put<Ticket>(`/chamados/${id}/resolvido`);
+  return data;
+};
+
