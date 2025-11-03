@@ -26,8 +26,13 @@ import {
   deleteUser,
 } from "../../api/users";
 import type { User } from "../../api/users";
+import DrawerList from "../../components/drawer/DrawerList";
+import { useAuth } from "../../hooks/useAuth";
+
+const drawerWidth = 240;
 
 export default function UsersPage() {
+  const { logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -54,7 +59,6 @@ export default function UsersPage() {
     loadUsers();
   }, []);
 
-  // Abre modal de criar ou editar
   const handleOpenModal = (user?: User) => {
     if (user) {
       setEditingUser(user);
@@ -97,7 +101,6 @@ export default function UsersPage() {
     }
   };
 
-  // Deletar usuário
   const handleDelete = async (id: number) => {
     if (confirm("Tem certeza que deseja excluir?")) {
       await deleteUser(id);
@@ -108,88 +111,113 @@ export default function UsersPage() {
   if (loading) return <p>Carregando...</p>;
 
   return (
-    <Box sx={{ padding: 2 }}>
-      <h1>Lista de Usuários</h1>
-      <Button variant="contained" onClick={() => handleOpenModal()}>
-        Novo Usuário
-      </Button>
+    <Box sx={{ display: "" }}>
+      {/* Drawer fixo */}
+      <DrawerList onLogout={logout} />
 
-      <Table sx={{ marginTop: 2 }}>
-        <TableHead>
-          <TableRow>
-            <TableCell>Nome</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Tipo</TableCell>
-            <TableCell>Ações</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell>{user.fullName}</TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>{user.tipo === "tecnico" ? "Técnico" : "Usuário"}</TableCell>
-              <TableCell>
-                <IconButton onClick={() => handleOpenModal(user)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton onClick={() => handleDelete(user.id)}>
-                  <DeleteIcon />
-                </IconButton>
-              </TableCell>
+      {/* Conteúdo principal */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          bgcolor: "#f5f6fa",
+          p: 3,
+          marginLeft: `${drawerWidth}px`,
+          minHeight: "100vh",
+        }}
+      >
+        <h1>👥 Lista de Usuários</h1>
+
+        <Button variant="contained" onClick={() => handleOpenModal()}>
+          Novo Usuário
+        </Button>
+
+        <Table sx={{ marginTop: 2 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell>Nome</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Tipo</TableCell>
+              <TableCell>Ações</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>{user.fullName}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  {user.tipo === "tecnico" ? "Técnico" : "Usuário"}
+                </TableCell>
+                <TableCell>
+                  <IconButton onClick={() => handleOpenModal(user)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton onClick={() => handleDelete(user.id)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
-      {/* Modal de criar/editar */}
-      <Dialog open={modalOpen} onClose={() => setModalOpen(false)}>
-        <DialogTitle>{editingUser ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Nome"
-            value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            select
-            label="Tipo"
-            value={form.tipo}
-            onChange={(e) =>
-              setForm({ ...form, tipo: e.target.value as "usuario" | "tecnico" })
-            }
-            fullWidth
-            margin="normal"
-          >
-            <MenuItem value="usuario">Usuário</MenuItem>
-            <MenuItem value="tecnico">Técnico</MenuItem>
-          </TextField>
-          <TextField
-            label="Senha"
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            fullWidth
-            margin="normal"
-            helperText={editingUser ? "Preencha apenas se quiser alterar a senha" : ""}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setModalOpen(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSave}>
-            Salvar
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {/* Modal de criar/editar */}
+        <Dialog open={modalOpen} onClose={() => setModalOpen(false)}>
+          <DialogTitle>
+            {editingUser ? "Editar Usuário" : "Novo Usuário"}
+          </DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Nome"
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="Email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              select
+              label="Tipo"
+              value={form.tipo}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  tipo: e.target.value as "usuario" | "tecnico",
+                })
+              }
+              fullWidth
+              margin="normal"
+            >
+              <MenuItem value="usuario">Usuário</MenuItem>
+              <MenuItem value="tecnico">Técnico</MenuItem>
+            </TextField>
+            <TextField
+              label="Senha"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              fullWidth
+              margin="normal"
+              helperText={
+                editingUser ? "Preencha apenas se quiser alterar a senha" : ""
+              }
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setModalOpen(false)}>Cancelar</Button>
+            <Button variant="contained" onClick={handleSave}>
+              Salvar
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
     </Box>
   );
 }

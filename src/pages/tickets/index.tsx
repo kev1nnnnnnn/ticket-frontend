@@ -1,4 +1,3 @@
-// src/pages/ticket/index.tsx
 import * as React from "react";
 import {
   Box,
@@ -19,6 +18,7 @@ import {
   Typography,
   Tooltip,
   Stack,
+  Pagination,
 } from "@mui/material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import EditIcon from "@mui/icons-material/Edit";
@@ -30,15 +30,33 @@ import {
   updateTicket,
   deleteTicket,
   type Ticket,
+  filterTickets,
 } from "../../api/tickets";
+import { getCategorias, type Categoria } from "../../api/category";
 import TicketComments from "../../components/ticket/TicketComments";
+import DrawerList from "../../components/drawer/DrawerList";
+import { useAuth } from "../../hooks/useAuth";
+import TicketFilters from "../../components/ticket/TicketFilters";
+
+const drawerWidth = 240;
 
 export default function TicketPage() {
+  const { logout } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [chamados, setChamados] = useState<Ticket[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
-  const [expandedTicketId, setExpandedTicketId] = useState<number | null>(null); // Controle de expansão
+  const [expandedTicketId, setExpandedTicketId] = useState<number | null>(null);
+
+  // Paginação
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const ticketsParaExibir = chamados.length > 0 ? chamados : tickets;
+
   const [form, setForm] = useState<Omit<Ticket, "id">>({
     titulo: "",
     descricao: "",
@@ -49,19 +67,21 @@ export default function TicketPage() {
     categoriaId: null,
   });
 
-  const loadTickets = async () => {
+  const loadTickets = async (pageNumber = 1) => {
     setLoading(true);
     try {
-      const data = await getTickets();
-      setTickets(data);
+      const data = await getTickets(pageNumber, perPage);
+      setTickets(data.data);
+      setTotalPages(data.meta.last_page);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadTickets();
-  }, []);
+    loadTickets(page);
+    getCategorias().then(setCategorias);
+  }, [page]);
 
   const handleOpenModal = (ticket?: Ticket) => {
     if (ticket) {
@@ -91,19 +111,27 @@ export default function TicketPage() {
   };
 
   const handleSave = async () => {
+    if (
+      (form.prioridade === "alta" || form.prioridade === "urgente") &&
+      !form.categoriaId
+    ) {
+      alert("Selecione uma categoria para chamados de alta ou urgente prioridade.");
+      return;
+    }
+
     if (editingTicket) {
       await updateTicket(editingTicket.id, form);
     } else {
       await createTicket(form);
     }
     setModalOpen(false);
-    loadTickets();
+    loadTickets(page);
   };
 
   const handleDelete = async (id: number) => {
     if (confirm("Tem certeza que deseja excluir este chamado?")) {
       await deleteTicket(id);
-      loadTickets();
+      loadTickets(page);
     }
   };
 
@@ -120,39 +148,82 @@ export default function TicketPage() {
     }
   };
 
-  if (loading) return <p>Carregando chamados...</p>;
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "resolvido":
+        return "success"; 
+      case "aberto":
+        return "info";
+      case "em_progresso":
+        return "warning";
+      case "cancelado":
+        return "error";
+      default:
+        return "default";
+    }
+  };
 
-  // Alterna expansão de apenas um ticket por vez
+
   const toggleExpand = (ticketId: number) => {
     setExpandedTicketId((prevId) => (prevId === ticketId ? null : ticketId));
   };
 
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
+  if (loading) return <p>Carregando chamados...</p>;
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Ticket's
-      </Typography>
+    <Box sx={{ display: "" }}>
+      <DrawerList onLogout={logout} />
 
-      <Button
-        variant="contained"
-        startIcon={<AddCircleIcon />}
-        onClick={() => handleOpenModal()}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          bgcolor: "#f5f6fa",
+          p: 3,
+          marginLeft: `${drawerWidth}px`,
+          minHeight: "100vh",
+        }}
       >
-        Novo Chamado
-      </Button>
+        <Typography variant="h4" fontWeight="bold" gutterBottom>
+          Ticket's
+        </Typography>
 
-      <Table sx={{ mt: 3, borderRadius: 2, overflow: "hidden" }}>
-        <TableHead>
-          <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-            <TableCell>Título</TableCell>
-            <TableCell>Prioridade</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Aberto em</TableCell>
-            <TableCell align="right">Ações</TableCell>
-          </TableRow>
-        </TableHead>
+      <TicketFilters
+        onFiltrar={(res) => {
+          setChamados(res.data);           // tickets filtrados
+          setTotalPages(res.meta.lastPage); // atualiza paginação
+          setPage(1);                        // volta para página 1 do filtro
+        }}
+      />
+
+
+
+        <Button
+          variant="contained"
+          startIcon={<AddCircleIcon />}
+          onClick={() => handleOpenModal()}
+        >
+          Novo Chamado
+        </Button>
+
+        <Table sx={{ mt: 3, borderRadius: 2, overflow: "hidden" }}>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+              <TableCell>Título</TableCell>
+              <TableCell>Prioridade</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Categoria</TableCell>
+              <TableCell>Aberto em</TableCell>
+              <TableCell align="right">Ações</TableCell>
+            </TableRow>
+          </TableHead>
+
         <TableBody>
-          {tickets.map((ticket) => (
+          {ticketsParaExibir.map((ticket) => (
             <React.Fragment key={ticket.id}>
               <TableRow
                 hover
@@ -170,9 +241,13 @@ export default function TicketPage() {
                 <TableCell>
                   <Chip
                     label={ticket.status.replace("_", " ").toUpperCase()}
-                    variant="outlined"
+                    color={statusColor(ticket.status)}
+                    variant={ticket.status === "resolvido" ? "filled" : "outlined"}
                     size="small"
                   />
+                </TableCell>
+                <TableCell>
+                  {categorias.find((cat) => cat.id === ticket.categoriaId)?.nome || "-"}
                 </TableCell>
                 <TableCell>
                   {ticket.createdAt
@@ -183,7 +258,7 @@ export default function TicketPage() {
                   <Tooltip title="Editar chamado">
                     <IconButton
                       onClick={(e) => {
-                        e.stopPropagation(); // Impede expandir ao clicar no botão
+                        e.stopPropagation();
                         handleOpenModal(ticket);
                       }}
                     >
@@ -204,68 +279,116 @@ export default function TicketPage() {
                 </TableCell>
               </TableRow>
 
-              {/* Linha de comentários - apenas o ticket expandido */}
+              {/* Expansão: descrição + comentários */}
               {expandedTicketId === ticket.id && (
                 <TableRow>
-                  <TableCell colSpan={5}>
-                    <TicketComments chamadoId={ticket.id} userId={ticket.userId} />
+                  <TableCell colSpan={6}>
+                    <Box sx={{ p: 2, bgcolor: "#f9f9f9", borderRadius: 2 }}>
+                      <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                        Descrição
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 2, whiteSpace: "pre-line" }}>
+                        {ticket.descricao || "-"}
+                      </Typography>
+
+                      <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                        Comentários
+                      </Typography>
+                      <TicketComments chamadoId={ticket.id} userId={ticket.userId} />
+                    </Box>
                   </TableCell>
                 </TableRow>
               )}
             </React.Fragment>
           ))}
         </TableBody>
-      </Table>
 
-      {/* Modal de criação/edição */}
-      <Dialog
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>
-          {editingTicket ? "Editar Chamado" : "Novo Chamado"}
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Título"
-              value={form.titulo}
-              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Descrição"
-              multiline
-              rows={4}
-              value={form.descricao}
-              onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              select
-              label="Prioridade"
-              value={form.prioridade}
-              onChange={(e) =>
-                setForm({ ...form, prioridade: e.target.value as Ticket["prioridade"] })
-              }
-              fullWidth
-            >
-              <MenuItem value="baixa">Baixa</MenuItem>
-              <MenuItem value="media">Média</MenuItem>
-              <MenuItem value="alta">Alta</MenuItem>
-              <MenuItem value="urgente">Urgente</MenuItem>
-            </TextField>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setModalOpen(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSave}>
-            Salvar
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Table>
+
+        {/* 🔹 Paginação */}
+      <Box display="flex" justifyContent="flex-start" mt={3}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+          shape="rounded"
+          sx={{ ml: 0 }} // garante que fique colado no canto
+        />
+      </Box>
+
+
+        {/* Modal de criação/edição */}
+        <Dialog
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle>
+            {editingTicket ? "Editar Chamado" : "Novo Chamado"}
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="Título"
+                value={form.titulo}
+                onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                fullWidth
+              />
+              <TextField
+                label="Descrição"
+                multiline
+                rows={4}
+                value={form.descricao}
+                onChange={(e) => setForm({ ...form, descricao: e.target.value })}
+                fullWidth
+              />
+              <TextField
+                select
+                label="Prioridade"
+                value={form.prioridade}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    prioridade: e.target.value as Ticket["prioridade"],
+                  })
+                }
+                fullWidth
+              >
+                <MenuItem value="baixa">Baixa</MenuItem>
+                <MenuItem value="media">Média</MenuItem>
+                <MenuItem value="alta">Alta</MenuItem>
+                <MenuItem value="urgente">Urgente</MenuItem>
+              </TextField>
+
+              <TextField
+                select
+                label="Categoria"
+                value={form.categoriaId ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, categoriaId: Number(e.target.value) })
+                }
+                fullWidth
+                required={form.prioridade === "alta" || form.prioridade === "urgente"}
+              >
+                <MenuItem value="">Nenhuma</MenuItem>
+                {categorias.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {cat.nome}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setModalOpen(false)}>Cancelar</Button>
+            <Button variant="contained" onClick={handleSave}>
+              Salvar
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
     </Box>
   );
 }

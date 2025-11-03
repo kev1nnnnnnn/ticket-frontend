@@ -17,10 +17,15 @@ export interface Ticket {
 }
 
 // 🔹 Listar chamados
-export const getTickets = async (): Promise<Ticket[]> => {
-  const { data } = await axiosInstance.get<Ticket[]>("/chamados");
-  return data;
+// 🔹 Listar chamados com paginação
+export const getTickets = async (page = 1, limit = 5): Promise<{
+  data: Ticket[];
+  meta: { last_page: number; current_page: number; total: number; per_page: number };
+}> => {
+  const { data } = await axiosInstance.get(`/chamados?page=${page}&limit=${limit}`);
+  return data; // aqui já retorna { data: Ticket[], meta: {...} }
 };
+
 
 // 🔹 Criar chamado
 export const createTicket = async (ticket: Omit<Ticket, "id">): Promise<Ticket> => {
@@ -45,3 +50,22 @@ export const resolveTicket = async (id: number): Promise<Ticket> => {
   return data;
 };
 
+// 🔹 Filtrar chamados (com paginação)
+export const filterTickets = async (filtros: {
+  status?: string;
+  prioridade?: string;
+  categoriaId?: number;
+  tecnicoId?: number;
+  userId?: number;
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  data: Ticket[];
+  meta: { lastPage: number; currentPage: number; total: number; perPage: number };
+}> => {
+  const { data } = await axiosInstance.post('/chamados/filtrar', filtros)
+  return data // retorna { data: Ticket[], meta: {...} }
+};
