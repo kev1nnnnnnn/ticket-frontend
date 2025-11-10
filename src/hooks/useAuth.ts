@@ -26,8 +26,11 @@ export function useAuth() {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const data = await loginAPI({ email, password });
+  /**
+   * Faz login com reCAPTCHA 
+   */
+  const login = async (email: string, password: string, recaptchaToken?: string) => {
+    const data = await loginAPI({ email, password, recaptchaToken }); // envia o token também
     localStorage.setItem("token", data.token);
     setUser(data.user);
   };
@@ -35,7 +38,7 @@ export function useAuth() {
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
-    navigate("/login"); // redireciona corretamente
+    navigate("/login");
   };
 
   return { user, login, logout, loading };

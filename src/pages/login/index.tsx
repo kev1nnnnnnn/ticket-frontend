@@ -10,22 +10,27 @@ import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Snackbar, Alert } from "@mui/material";
 import { FormWrapper, LeftSide, LoginContainer, RightSide } from "./loginStyles";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const providers: AuthProvider[] = [
   { id: "credentials", name: "Email and password" },
 ];
+
+const RECAPTCHA_SITE_KEY = "6LdKbQQsAAAAAI7qY3iwd6551W4e8UGejruDm1Ia";
 
 export default function Login() {
   const theme = useTheme();
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [emailError, setEmailError] = React.useState<string>("");
-  const [passwordError, setPasswordError] = React.useState<string>("");
+  const [emailError, setEmailError] = React.useState("");
+  const [passwordError, setPasswordError] = React.useState("");
+  const [recaptchaError, setRecaptchaError] = React.useState("");
 
-  // Snackbar state
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState("");
+
+  const recaptchaRef = React.useRef<ReCAPTCHA>(null);
 
   const handleCloseSnackbar = (
     event?: React.SyntheticEvent | Event,
@@ -41,30 +46,30 @@ export default function Login() {
   ): Promise<AuthResponse> => {
     setEmailError("");
     setPasswordError("");
+    setRecaptchaError("");
 
     try {
       const email = (formData?.get("email") as string) || "";
       const password = (formData?.get("password") as string) || "";
+      const recaptchaToken = recaptchaRef.current?.getValue();
 
-      // Validação de campos vazios local
-      if (!email.trim() || !password.trim()) {
+      // Verifica campos obrigatórios
+      if (!email.trim() || !password.trim() || !recaptchaToken) {
         if (!email.trim()) setEmailError("O e-mail é obrigatório");
         if (!password.trim()) setPasswordError("A senha é obrigatória");
+        if (!recaptchaToken) setRecaptchaError("Valide o reCAPTCHA");
         return { type: "CredentialsSignin", error: "Erro de validação" };
       }
 
-      // Chamada da API
-      await login(email, password);
+      // Faz o login enviando o token junto
+      await login(email, password, recaptchaToken);
 
-      // Login realizado com sucesso → abrir Snackbar
+      // Se passou, exibe sucesso
       setSnackbarMessage("Login realizado com sucesso!");
       setOpenSnackbar(true);
+      recaptchaRef.current?.reset();
 
-      // Espera 1 segundo antes de navegar para ver o Snackbar
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
-
+      setTimeout(() => navigate("/"), 1000);
       return { type: "CredentialsSignin" };
     } catch (err: any) {
       const backendErrors = err?.response?.data?.errors;
@@ -74,10 +79,7 @@ export default function Login() {
           const msg = String(e?.message || "Erro de validação");
           if (e.field === "email") setEmailError(msg);
           else if (e.field === "password") setPasswordError(msg);
-          else {
-            setEmailError(msg);
-            setPasswordError(msg);
-          }
+          else if (e.field === "recaptcha") setRecaptchaError(msg);
         });
         return { type: "CredentialsSignin", error: "Erro de validação" };
       }
@@ -86,10 +88,8 @@ export default function Login() {
         err?.response?.data?.message ||
         err.message ||
         "Erro ao fazer login";
-
       setEmailError(msg);
       setPasswordError(msg);
-
       return { type: "CredentialsSignin", error: msg };
     }
   };
@@ -106,11 +106,36 @@ export default function Login() {
               providers={providers}
               slotProps={{
                 form: { noValidate: true },
-                emailField: { autoFocus: true, helperText: emailError, error: !!emailError },
-                passwordField: { helperText: passwordError, error: !!passwordError },
+                emailField: {
+                  autoFocus: true,
+                  helperText: emailError,
+                  error: !!emailError,
+                },
+                passwordField: {
+                  helperText: passwordError,
+                  error: !!passwordError,
+                },
               }}
             />
 
+            {/* reCAPTCHA */}
+            <div
+              style={{
+                marginTop: "1rem",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <ReCAPTCHA ref={recaptchaRef} sitekey={RECAPTCHA_SITE_KEY} />
+              {recaptchaError && (
+                <p style={{ color: "red", fontSize: "0.85rem", marginTop: "0.5rem" }}>
+                  {recaptchaError}
+                </p>
+              )}
+            </div>
+
+            {/* Snackbar */}
             <Snackbar
               open={openSnackbar}
               autoHideDuration={3000}
@@ -131,5 +156,4 @@ export default function Login() {
       </RightSide>
     </LoginContainer>
   );
-
-};
+}

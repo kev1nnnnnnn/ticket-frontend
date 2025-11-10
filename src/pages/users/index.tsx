@@ -1,4 +1,3 @@
-import * as React from "react";
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -15,6 +14,7 @@ import {
   TableRow,
   IconButton,
   MenuItem,
+  Pagination,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -28,15 +28,25 @@ import {
 import type { User } from "../../api/users";
 import DrawerList from "../../components/drawer/DrawerList";
 import { useAuth } from "../../hooks/useAuth";
+import UsersFilter from "../../components/users/UsersFilters";
 
 const drawerWidth = 240;
 
 export default function UsersPage() {
   const { logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [usersFiltrados, setUsersFiltrados] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+    // Paginação
+    const [page, setPage] = useState(1);
+    const [perPage] = useState(10);
+    const [totalPages, setTotalPages] = useState(1);
+
+     const clientesParaExibir = (usersFiltrados?.length ?? 0) > 0 ? usersFiltrados : users || [];
+
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -45,19 +55,20 @@ export default function UsersPage() {
   });
 
   // Carrega usuários da API
-  const loadUsers = async () => {
+  const loadUsers = async (pageNumber = 1) => {
     setLoading(true);
     try {
-      const data = await getUsers();
-      setUsers(data);
+      const data = await getUsers(pageNumber, perPage);
+      setUsers(data.data);
+      setTotalPages(data.meta?.last_page || 1);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    loadUsers(page);
+  }, [page]);
 
   const handleOpenModal = (user?: User) => {
     if (user) {
@@ -108,6 +119,10 @@ export default function UsersPage() {
     }
   };
 
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
   if (loading) return <p>Carregando...</p>;
 
   return (
@@ -128,6 +143,15 @@ export default function UsersPage() {
       >
         <h1>👥 Lista de Usuários</h1>
 
+        <UsersFilter
+          onFiltrar={(res) => {
+            setUsersFiltrados(res.data);
+            setTotalPages(res.meta.lastPage || 1);
+            setPage(1);
+          }}
+        />
+        
+
         <Button variant="contained" onClick={() => handleOpenModal()}>
           Novo Usuário
         </Button>
@@ -142,7 +166,7 @@ export default function UsersPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
+            {(clientesParaExibir || []).map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.fullName}</TableCell>
                 <TableCell>{user.email}</TableCell>
@@ -153,7 +177,7 @@ export default function UsersPage() {
                   <IconButton onClick={() => handleOpenModal(user)}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDelete(user.id)}>
+                  <IconButton onClick={() => handleDelete(user.id)} color="error">
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
@@ -161,6 +185,18 @@ export default function UsersPage() {
             ))}
           </TableBody>
         </Table>
+
+        {/* 🔹 Paginação */}
+        <Box display="flex" justifyContent="flex-start" mt={3}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+            shape="rounded"
+            sx={{ ml: 0 }} // garante que fique colado no canto
+          />
+        </Box>
 
         {/* Modal de criar/editar */}
         <Dialog open={modalOpen} onClose={() => setModalOpen(false)}>

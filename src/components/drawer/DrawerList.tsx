@@ -10,6 +10,7 @@ import ListItemText from "@mui/material/ListItemText";
 import InboxIcon from "@mui/icons-material/MoveToInbox";
 import MailIcon from "@mui/icons-material/Mail";
 import PeopleIcon from "@mui/icons-material/People";
+import DescriptionIcon from '@mui/icons-material/Description';
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import { useNavigate } from "react-router-dom";
 
@@ -29,9 +30,12 @@ export default function DrawerList({ onLogout }: DrawerProps) {
 
   const menuItems = [
     { text: "Início", icon: <InboxIcon />, path: "/" },
-    { text: "Usuários", icon: <PeopleIcon />, path: "/users" },
+    { text: "Usuários", icon: <PeopleIcon />, path: "/usuarios" },
     { text: "Tickets", icon: <ConfirmationNumberIcon />, path: "/tickets" },
-    { text: "Inbox", icon: <MailIcon />, path: "/inbox" },
+    { text: "Clientes", icon: <PeopleIcon />, path: "/clientes" },
+    { text: "Contratos", icon: <DescriptionIcon />, path: "/contratos" },
+    { text: "Ordens de Serviço", icon: <DescriptionIcon />, path: "/ordem_de_servico" },
+    { text: "Email", icon: <MailIcon />, path: "/emails" },
   ];
 
   return (

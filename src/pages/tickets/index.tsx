@@ -30,7 +30,7 @@ import {
   updateTicket,
   deleteTicket,
   type Ticket,
-  filterTickets,
+
 } from "../../api/tickets";
 import { getCategorias, type Categoria } from "../../api/category";
 import TicketComments from "../../components/ticket/TicketComments";
@@ -192,15 +192,13 @@ export default function TicketPage() {
           Ticket's
         </Typography>
 
-      <TicketFilters
-        onFiltrar={(res) => {
-          setChamados(res.data);           // tickets filtrados
-          setTotalPages(res.meta.lastPage); // atualiza paginação
-          setPage(1);                        // volta para página 1 do filtro
-        }}
-      />
-
-
+        <TicketFilters
+          onFiltrar={(res) => {
+            setChamados(res.data);           // tickets filtrados
+            setTotalPages(res.meta.lastPage); // atualiza paginação
+            setPage(1);                        // volta para página 1 do filtro
+          }}
+        />
 
         <Button
           variant="contained"

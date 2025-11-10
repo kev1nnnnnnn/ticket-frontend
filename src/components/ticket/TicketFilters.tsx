@@ -19,7 +19,7 @@ interface Categoria {
 }
 
 interface TicketFiltersProps {
-  onFiltrar: (res: { data: Ticket[]; meta: any }) => void; // ✅ envia array + meta
+  onFiltrar: (res: { data: Ticket[]; meta: any }) => void; 
 }
 
 export default function TicketFilters({ onFiltrar }: TicketFiltersProps) {

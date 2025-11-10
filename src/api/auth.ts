@@ -3,6 +3,7 @@ import axiosInstance from "../utils/axiosInstance";
 export interface LoginPayload {
   email: string;
   password: string;
+  recaptchaToken?: string; // 👈 novo campo opcional
 }
 
 export interface LoginResponse {

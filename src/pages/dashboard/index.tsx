@@ -75,99 +75,96 @@ export default function Dashboard() {
   if (!user) return null;
 
   return (
-    <Box sx={{ display: "" }}>
-      {/* Drawer fixo */}
-      <DrawerList onLogout={logout} />
+   <Box
+  component="main"
+  sx={{
+    flexGrow: 1,
+    bgcolor: "#f5f6fa",
+    p: 3,
+    marginLeft: `${drawerWidth}px`,
+    minHeight: "100vh",
+  }}
+>
+  <Typography variant="h4" gutterBottom>
+    🏠 Dashboard
+  </Typography>
+  <Typography variant="subtitle1" gutterBottom>
+    Bem-vindo, {user.fullName}!
+  </Typography>
 
-      {/* Conteúdo principal */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          bgcolor: "#f5f6fa",
-          p: 3,
-          marginLeft: `${drawerWidth}px`,
-          minHeight: "100vh",
-        }}
-      >
-        <Typography variant="h4" gutterBottom>
-          🏠 Dashboard
-        </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          Bem-vindo, {user.fullName}!
-        </Typography>
+  {/* Linha 1 - Tempo médio + Status */}
+  <Box display="flex" flexWrap="wrap" gap={2} mb={3}>
+    {tempoMedio && (
+      <Paper sx={{ p: 2, flex: 1, minWidth: 250 }}>
+        <Typography variant="h6">⏱ Tempo Médio de Resolução</Typography>
+        <Typography variant="h4">{tempoMedio.media_horas} horas</Typography>
+      </Paper>
+    )}
 
-        {/* Tempo Médio */}
-        {tempoMedio && (
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="h6">⏱ Tempo Médio de Resolução</Typography>
-            <Typography variant="h4">{tempoMedio.media_horas} horas</Typography>
-          </Paper>
-        )}
+    <Paper sx={{ p: 2, flex: 2, minWidth: 300 }}>
+      <Typography variant="h6">📊 Chamados por Status</Typography>
+      <ResponsiveContainer width="100%" height={250}>
+        <BarChart
+          data={statusData.map(item => ({
+            status: item.status,
+            total: item.total,
+          }))}
+        >
+          <XAxis dataKey="status" />
+          <YAxis />
+          <Tooltip />
+          <Bar dataKey="total" fill="#1976d2" />
+        </BarChart>
+      </ResponsiveContainer>
+    </Paper>
+  </Box>
 
-        {/* Chamados por Status */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6">📊 Chamados por Status</Typography>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart
-              data={statusData.map(item => ({
-                status: item.status,
-                total: item.total,
-              }))}
-            >
-              <XAxis dataKey="status" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="total" fill="#1976d2" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Paper>
+  {/* Linha 2 - Prioridade + Últimos 7 dias */}
+  <Box display="flex" flexWrap="wrap" gap={2}>
+    <Paper sx={{ p: 2, flex: 1, minWidth: 300 }}>
+      <Typography variant="h6">🎯 Chamados por Prioridade</Typography>
+      <ResponsiveContainer width="100%" height={250}>
+        <PieChart>
+          <Pie
+            data={prioridadeData.map(item => ({
+              name: item.prioridade,
+              value: item.total,
+            }))}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            outerRadius={80}
+            label
+          >
+            {prioridadeData.map((_, index) => (
+              <Cell key={index} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+        </PieChart>
+      </ResponsiveContainer>
+    </Paper>
 
-        {/* Chamados por Prioridade */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6">🎯 Chamados por Prioridade</Typography>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={prioridadeData.map(item => ({
-                  name: item.prioridade,
-                  value: item.total,
-                }))}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label
-              >
-                {prioridadeData.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </Paper>
+    <Paper sx={{ p: 2, flex: 2, minWidth: 300 }}>
+      <Typography variant="h6">📈 Chamados últimos 7 dias</Typography>
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart
+          data={ultimos7Data.map(item => ({
+            data: item.data,
+            total: item.total,
+          }))}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="data" />
+          <YAxis />
+          <Tooltip />
+          <Line type="monotone" dataKey="total" stroke="#1976d2" />
+        </LineChart>
+      </ResponsiveContainer>
+    </Paper>
+  </Box>
+</Box>
 
-        {/* Chamados últimos 7 dias */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6">📈 Chamados últimos 7 dias</Typography>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart
-              data={ultimos7Data.map(item => ({
-                data: item.data,
-                total: item.total,
-              }))}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="data" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="total" stroke="#1976d2" />
-            </LineChart>
-          </ResponsiveContainer>
-        </Paper>
-      </Box>
-    </Box>
   );
 }
