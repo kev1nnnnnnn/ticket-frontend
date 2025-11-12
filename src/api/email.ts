@@ -38,7 +38,7 @@ export interface PaginatedEmailLogs {
 }
 
 // ===================================================================
-// 🔸 1. Enviar e-mail
+// 1. Enviar e-mail
 // ===================================================================
 export const sendEmail = async (payload: EmailPayload): Promise<EmailResponse> => {
   try {
@@ -52,7 +52,7 @@ export const sendEmail = async (payload: EmailPayload): Promise<EmailResponse> =
 }
 
 // ===================================================================
-// 🔸 2. Listar logs
+// 2. Listar logs
 // ===================================================================
 export const getEmailLogs = async (page: number = 1): Promise<PaginatedEmailLogs> => {
   const { data } = await axiosInstance.get<PaginatedEmailLogs>(`/emails/logs?page=${page}`)
@@ -60,7 +60,7 @@ export const getEmailLogs = async (page: number = 1): Promise<PaginatedEmailLogs
 }
 
 // ===================================================================
-// 🔸 3. Buscar log por ID
+// 3. Buscar log por ID
 // ===================================================================
 export const getEmailLogById = async (id: number): Promise<EmailLog> => {
   const { data } = await axiosInstance.get<EmailLog>(`/emails/logs/${id}`)
@@ -68,9 +68,23 @@ export const getEmailLogById = async (id: number): Promise<EmailLog> => {
 }
 
 // ===================================================================
-// 🔸 4. Excluir log
+// 4. Excluir log
 // ===================================================================
 export const deleteEmailLog = async (id: number): Promise<{ message: string }> => {
   const { data } = await axiosInstance.delete<{ message: string }>(`/emails/logs/${id}`)
   return data
 }
+
+// ===================================================================
+// 5. Envio em massa
+// ===================================================================
+export const sendMassEmail = async (emails: EmailPayload[]): Promise<EmailResponse[]> => {
+  try {
+    const { data } = await axiosInstance.post<EmailResponse[]>("/emails/enviar-massa", emails);
+    return data;
+  } catch (error: any) {
+    console.error("Erro ao enviar e-mails em massa:", error?.response?.data || error);
+    throw new Error("Falha ao enviar e-mails em massa");
+  }
+}
+ 
